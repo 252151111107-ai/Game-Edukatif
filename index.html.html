@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>107_PUTRI SYAH'RANY — Petualangan Kubus</title>
+<style>
+:root{--pink:#c45b91;--pink2:#fae5ef;--ink:#352b34;--muted:#756773;--line:#ead8e3;--panel:#fff8fc}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fff1f7;color:var(--ink)}
+.wrap{max-width:900px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;gap:15px;align-items:center}
+h1{margin:0;font-size:28px}.sub{color:var(--muted);margin-top:5px}.badge{background:var(--pink2);color:#7b3859;padding:8px 12px;border-radius:20px;font-size:12px;font-weight:bold}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0}.stat{background:#fff;border:1px solid var(--line);border-radius:13px;padding:10px;text-align:center}.stat small{color:var(--muted);display:block}.stat b{font-size:18px}
+.layout{display:grid;grid-template-columns:1.25fr .75fr;gap:15px}.card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:15px}
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;background:#f8dce9;padding:7px;border-radius:15px}
+.cell{min-height:72px;border-radius:10px;background:#fff;border:1px solid #e9d9e1;padding:5px;position:relative;font-size:11px;font-weight:bold}.cell:nth-child(4n){background:#fff7fb}.cell.special{background:#f7e8f0}.cell.ladder{background:#eef7f0}.cell.snake{background:#fff0f0}
+.num{font-size:11px;color:var(--muted)}.token{font-size:23px;text-align:center;margin-top:7px}.mark{position:absolute;right:4px;top:3px;font-size:15px}
+.panel-title{font-weight:800;font-size:17px;margin-bottom:8px}.story{font-size:14px;line-height:1.5;color:var(--muted)}
+.dice{font-size:58px;text-align:center;margin:7px 0}.roll{width:100%;background:var(--pink);color:white;font-size:16px}.roll:disabled{opacity:.5}
+.message{margin-top:10px;padding:10px;border-radius:11px;background:var(--panel);line-height:1.45;font-size:14px}
+.question{margin-top:10px;padding:12px;background:var(--panel);border-radius:12px}.option{display:block;width:100%;text-align:left;margin:7px 0;background:#fff;border:2px solid var(--line)}.option:hover{border-color:var(--pink)}.option.correct{border-color:#4f8761;background:#eef7f0}.option.wrong{border-color:#a95050;background:#fff0f0}
+.action{background:var(--pink2);color:#713651;width:100%;margin-top:8px;padding:10px;border:0;border-radius:10px;font-weight:bold;cursor:pointer}
+.hidden{display:none}.legend{font-size:12px;line-height:1.7;margin-top:10px}.legend span{margin-right:10px}
+.result{text-align:center;padding:20px}.result h2{font-size:28px}.big{font-size:42px;font-weight:900;color:var(--pink)}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.cell{min-height:58px}.top{display:block}.badge{display:inline-block;margin-top:9px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div><h1>🎲 PETUALANGAN KUBUS</h1><div class="sub">Ular Tangga Matematika: Misi Menaklukkan Kota Kubus</div></div><div class="badge">GAME EDUKATIF</div></div>
+
+<div class="stats">
+<div class="stat"><small>Posisi</small><b id="pos">1</b></div>
+<div class="stat"><small>Skor</small><b id="score">0</b></div>
+<div class="stat"><small>Nyawa</small><b id="life">❤️❤️❤️</b></div>
+<div class="stat"><small>Giliran</small><b id="turn">1</b></div>
+</div>
+
+<div class="layout">
+<section class="card">
+<div class="panel-title">🏰 Papan Kota Kubus</div>
+<div id="board" class="board"></div>
+<div class="legend">
+<span>🪜 Tangga = maju</span><span>🐍 Ular = mundur</span><span>❓ Kuis = jawab tantangan</span><span>⭐ Bonus = tambah skor</span>
+</div>
+</section>
+
+<aside class="card">
+<div class="panel-title">🎯 Misi</div>
+<p id="story" class="story">Kamu adalah penjelajah Kota Kubus. Lempar dadu, bergerak di papan, dan selesaikan tantangan untuk mencapai istana di kotak 30.</p>
+<div id="dice" class="dice">🎲</div>
+<button id="roll" class="roll">LEMPAR DADU</button>
+<div id="message" class="message">Tekan tombol untuk memulai petualangan.</div>
+<div id="challenge" class="question hidden"></div>
+<button id="continue" class="action hidden">Lanjutkan Permainan</button>
+</aside>
+</div>
+
+<div id="result" class="card result hidden">
+<div style="font-size:55px">👑</div><h2>Kamu Mencapai Istana Kubus!</h2>
+<div id="final" class="big"></div>
+<p id="rank"></p>
+<button id="again" class="action">🔄 Main Lagi</button>
+</div>
+</div>
+
+<script>
+const questions = [
+  {q:"Sebuah kubus memiliki panjang sisi 5 cm. Berapa volumenya?", a:["25 cm³","75 cm³","125 cm³","150 cm³"], c:2},
+  {q:"Jaring-jaring kubus tersusun dari berapa persegi yang sama besar?", a:["4","5","6","8"], c:2},
+  {q:"Sebuah kubus memiliki sisi 6 cm. Berapa luas permukaannya?", a:["36 cm²","72 cm²","180 cm²","216 cm²"], c:3},
+  {q:"Volume sebuah kubus adalah 64 cm³. Berapa panjang sisinya?", a:["2 cm","4 cm","6 cm","8 cm"], c:1},
+  {q:"Bangun ruang yang memiliki 6 sisi berbentuk persegi, 12 rusuk, dan 8 titik sudut disebut ...", a:["Balok","Prisma","Kubus","Limas"], c:2},
+  {q:"Jika panjang sisi kubus menjadi 2 kali lipat, volumenya menjadi ...", a:["2 kali","4 kali","6 kali","8 kali"], c:3},
+  {q:"Rumus luas permukaan kubus adalah ...", a:["s × s","4s²","6s²","s³"], c:2},
+  {q:"Kubus mempunyai berapa rusuk?", a:["6","8","10","12"], c:3},
+  {q:"Kubus mempunyai berapa titik sudut?", a:["6","8","10","12"], c:1},
+  {q:"Jika panjang sisi kubus 10 cm, luas satu sisinya adalah ...", a:["20 cm²","50 cm²","100 cm²","600 cm²"], c:2},
+  {q:"Jika panjang sisi kubus 3 cm, volumenya adalah ...", a:["9 cm³","18 cm³","27 cm³","36 cm³"], c:2},
+  {q:"Sebuah kubus memiliki luas permukaan 150 cm². Panjang sisinya adalah ...", a:["4 cm","5 cm","6 cm","10 cm"], c:1},
+  {q:"Jaring-jaring kubus yang benar harus dapat ...", a:["Membentuk lingkaran","Dilipat menjadi kubus tanpa tumpang tindih","Membentuk segitiga","Memiliki 8 persegi"], c:1},
+  {q:"Jika satu persegi pada jaring-jaring memiliki sisi 4 cm, luas satu perseginya adalah ...", a:["8 cm²","12 cm²","16 cm²","20 cm²"], c:2},
+  {q:"Berapa jumlah sisi pada sebuah kubus?", a:["4","6","8","12"], c:1},
+  {q:"Jika rusuk kubus 7 cm, keliling satu sisinya adalah ...", a:["14 cm","21 cm","28 cm","49 cm"], c:2},
+  {q:"Jika volume kubus 216 cm³, panjang rusuknya adalah ...", a:["4 cm","5 cm","6 cm","8 cm"], c:2},
+  {q:"Sebuah kubus memiliki rusuk 8 cm. Luas permukaannya adalah ...", a:["64 cm²","192 cm²","384 cm²","512 cm²"], c:2},
+  {q:"Jika panjang rusuk kubus diperbesar 3 kali, luas permukaannya menjadi ...", a:["3 kali","6 kali","9 kali","27 kali"], c:2},
+  {q:"Jika panjang rusuk kubus diperbesar 3 kali, volumenya menjadi ...", a:["3 kali","6 kali","9 kali","27 kali"], c:3},
+  {q:"Manakah yang bukan merupakan ciri-ciri kubus?", a:["Semua rusuk sama panjang","Semua sisinya persegi","Memiliki 8 titik sudut","Memiliki 10 rusuk"], c:3},
+  {q:"Sebuah jaring-jaring terdiri dari 6 persegi. Jika dilipat dengan tepat, bangun yang terbentuk adalah ...", a:["Kubus","Kerucut","Tabung","Bola"], c:0},
+  {q:"Sebuah kubus mempunyai panjang rusuk 12 cm. Volume kubus tersebut adalah ...", a:["144 cm³","288 cm³","1.440 cm³","1.728 cm³"], c:3},
+  {q:"Sebuah kubus mempunyai panjang rusuk 9 cm. Luas permukaannya adalah ...", a:["81 cm²","243 cm²","486 cm²","729 cm²"], c:2},
+  {q:"Dua kubus memiliki panjang rusuk masing-masing 2 cm dan 4 cm. Perbandingan volumenya adalah ...", a:["1 : 2","1 : 4","1 : 8","1 : 16"], c:2}
+];
+
+const ladders={3:10,8:15,14:24,19:28};
+const snakes={12:5,17:9,23:14,27:18};
+const special={2:"quiz",6:"bonus",9:"quiz",11:"bonus",13:"quiz",16:"bonus",18:"quiz",21:"bonus",22:"quiz",25:"quiz",26:"bonus",29:"quiz"};
+
+let pos=1,score=0,life=3,turn=1,locked=false,questionIndex=0;
+
+const $=id=>document.getElementById(id);
+
+function buildBoard(){
+ const board=$("board"); board.innerHTML="";
+ const cells=[];
+ for(let n=1;n<=30;n++)cells.push(n);
+ // zigzag visual
+ const rows=[];
+ for(let r=4;r>=0;r--){let row=cells.slice(r*6,r*6+6);if((4-r)%2===1)row.reverse();rows.push(...row)}
+ rows.forEach(n=>{
+   const cell=document.createElement("div");cell.className="cell";cell.id="cell"+n;
+   let icon="";
+   if(ladders[n]){cell.classList.add("ladder");icon="🪜"}
+   if(snakes[n]){cell.classList.add("snake");icon="🐍"}
+   if(special[n]){cell.classList.add("special");icon=special[n]==="quiz"?"❓":"⭐"}
+   cell.innerHTML='<span class="num">'+n+'</span><span class="mark">'+icon+'</span><div class="token" id="token'+n+'"></div>';
+   board.appendChild(cell);
+ });
+ updateToken();
+}
+
+function updateToken(){
+ document.querySelectorAll(".token").forEach(x=>x.textContent="");
+ $("token"+pos).textContent="🧙";
+ $("pos").textContent=pos;
+}
+
+function showMessage(t){$("message").innerHTML=t}
+
+function rollDice(){
+ if(locked)return;
+ locked=true;
+ const d=Math.floor(Math.random()*6)+1;
+ $("dice").textContent=["⚀","⚁","⚂","⚃","⚄","⚅"][d-1];
+ $("roll").disabled=true;
+ let target=Math.min(30,pos+d);
+ showMessage("🎲 Kamu mendapatkan <b>"+d+"</b>. Maju dari kotak "+pos+" ke kotak "+target+"!");
+ setTimeout(()=>{pos=target;updateToken();resolveCell()},500);
+}
+
+function resolveCell(){
+ if(pos>=30){finish();return}
+ if(ladders[pos]){
+   const old=pos;pos=ladders[pos];updateToken();
+   showMessage("🪜 <b>TANGGA!</b> Dari kotak "+old+" kamu naik ke kotak "+pos+".");
+   setTimeout(afterCell,700);return;
+ }
+ if(snakes[pos]){
+   const old=pos;pos=snakes[pos];updateToken();
+   showMessage("🐍 <b>ULAR!</b> Kamu tergelincir dari kotak "+old+" ke kotak "+pos+".");
+   setTimeout(afterCell,700);return;
+ }
+ if(special[pos]==="quiz"){showQuiz();return}
+ if(special[pos]==="bonus"){score+=10;$("score").textContent=score;showMessage("⭐ <b>BONUS!</b> Kamu menemukan koin matematika. +10 skor.");}
+ afterCell();
+}
+
+function afterCell(){
+ turn++;
+ $("turn").textContent=turn;
+ locked=false;$("roll").disabled=false;
+}
+
+function showQuiz(){
+ const q=questions[questionIndex%questions.length];questionIndex++;
+ const box=$("challenge");box.classList.remove("hidden");
+ box.innerHTML="<b>❓ TANTANGAN KUIS</b><p>"+q.q+"</p>";
+ q.a.forEach((a,i)=>{
+   const b=document.createElement("button");b.className="option";b.textContent=String.fromCharCode(65+i)+". "+a;
+   b.onclick=()=>answerQuiz(b,i,q);
+   box.appendChild(b);
+ });
+ $("continue").classList.add("hidden");
+ showMessage("Berhenti di kotak kuis! Jawab dengan benar untuk mendapatkan skor.");
+}
+
+function answerQuiz(btn,i,q){
+ const opts=document.querySelectorAll(".option");opts.forEach(x=>x.disabled=true);
+ if(i===q.c){btn.classList.add("correct");score+=20;showMessage("🎉 <b>Benar!</b> +20 skor. "+q.e)}
+ else{btn.classList.add("wrong");life--; $("life").textContent="❤️".repeat(life)+"🖤".repeat(3-life);showMessage("💡 Belum tepat. "+q.e)}
+ $("score").textContent=score;
+ $("challenge").classList.add("hidden");
+ $("continue").classList.remove("hidden");
+}
+$("continue").onclick=()=>{ $("continue").classList.add("hidden"); if(life<=0){finish(false)}else{afterCell()} };
+$("roll").onclick=rollDice;
+
+function finish(win=true){
+ locked=true;$("game")?.classList.add("hidden");
+ document.querySelector(".layout").classList.add("hidden");
+ document.querySelector(".stats").classList.add("hidden");
+ $("result").classList.remove("hidden");
+ $("final").textContent=score+" / 100";
+ $("rank").textContent=win?(score>=80?"🌟 MASTER KUBUS — Kota berhasil diselamatkan!":score>=50?"🚀 PENJELAJAH KUBUS — Misi berhasil!":"🧠 PEMBELAJAR KUBUS — Coba lagi untuk skor lebih tinggi!"):"💔 Nyawamu habis. Coba strategi baru!";
+}
+$("again").onclick=()=>location.reload();
+buildBoard();
+</script>
+</body>
+</html>
